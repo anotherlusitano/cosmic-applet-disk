@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 use std::sync::LazyLock;
 
 use i18n_embed::{

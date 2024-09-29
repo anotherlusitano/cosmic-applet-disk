@@ -1,53 +1,37 @@
-// SPDX-License-Identifier: GPL-3.0-only
-
 use cosmic::app::{Command, Core};
 use cosmic::iced::wayland::popup::{destroy_popup, get_popup};
 use cosmic::iced::window::Id;
 use cosmic::iced::Limits;
 use cosmic::iced_style::application;
-use cosmic::widget::{self, settings};
+use cosmic::iced_widget::row;
+use cosmic::widget::{self};
 use cosmic::{Application, Element, Theme};
 
 use crate::fl;
 
-/// This is the struct that represents your application.
-/// It is used to define the data that will be used by your application.
+use crate::disk::{get_home_partition, get_partition, Partition};
+
 #[derive(Default)]
-pub struct YourApp {
-    /// Application state which is managed by the COSMIC runtime.
+pub struct App {
     core: Core,
-    /// The popup id.
     popup: Option<Id>,
-    /// Example row toggler.
-    example_row: bool,
+    partitions: Vec<Partition>,
 }
 
-/// This is the enum that contains all the possible variants that your application will need to transmit messages.
-/// This is used to communicate between the different parts of your application.
-/// If your application does not need to send messages, you can use an empty enum or `()`.
 #[derive(Debug, Clone)]
 pub enum Message {
     TogglePopup,
     PopupClosed(Id),
-    ToggleExampleRow(bool),
 }
 
-/// Implement the `Application` trait for your application.
-/// This is where you define the behavior of your application.
-///
-/// The `Application` trait requires you to define the following types and constants:
-/// - `Executor` is the async executor that will be used to run your application's commands.
-/// - `Flags` is the data that your application needs to use before it starts.
-/// - `Message` is the enum that contains all the possible variants that your application will need to transmit messages.
-/// - `APP_ID` is the unique identifier of your application.
-impl Application for YourApp {
+impl Application for App {
     type Executor = cosmic::executor::Default;
 
     type Flags = ();
 
     type Message = Message;
 
-    const APP_ID: &'static str = "com.example.CosmicAppletTemplate";
+    const APP_ID: &'static str = "another.lusitano.AppletDisk";
 
     fn core(&self) -> &Core {
         &self.core
@@ -57,16 +41,10 @@ impl Application for YourApp {
         &mut self.core
     }
 
-    /// This is the entry point of your application, it is where you initialize your application.
-    ///
-    /// Any work that needs to be done before the application starts should be done here.
-    ///
-    /// - `core` is used to passed on for you by libcosmic to use in the core of your own application.
-    /// - `flags` is used to pass in any data that your application needs to use before it starts.
-    /// - `Command` type is used to send messages to your application. `Command::none()` can be used to send no messages to your application.
     fn init(core: Core, _flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        let app = YourApp {
+        let app = App {
             core,
+            partitions: get_partition(),
             ..Default::default()
         };
 
@@ -77,37 +55,61 @@ impl Application for YourApp {
         Some(Message::PopupClosed(id))
     }
 
-    /// This is the main view of your application, it is the root of your widget tree.
-    ///
-    /// The `Element` type is used to represent the visual elements of your application,
-    /// it has a `Message` associated with it, which dictates what type of message it can send.
-    ///
-    /// To get a better sense of which widgets are available, check out the `widget` module.
     fn view(&self) -> Element<Self::Message> {
-        self.core
-            .applet
-            .icon_button("display-symbolic")
-            .on_press(Message::TogglePopup)
-            .into()
+        let partitions = &self.partitions;
+        let home_partition = get_home_partition(partitions).unwrap();
+        let space_percentage = home_partition.get_space_percentage();
+
+        let percentage = format!("{}%", space_percentage);
+
+        row![
+            self.core.applet.text(percentage),
+            self.core
+                .applet
+                .icon_button("disks-symbolic")
+                .on_press(Message::TogglePopup)
+        ]
+        .align_items(cosmic::iced::Alignment::Center)
+        .into()
     }
 
     fn view_window(&self, _id: Id) -> Element<Self::Message> {
-        let content_list = widget::list_column()
-            .padding(5)
-            .spacing(0)
-            .add(settings::item(
-                fl!("example-row"),
-                widget::toggler(None, self.example_row, |value| {
-                    Message::ToggleExampleRow(value)
-                }),
-            ));
+        let mut grid = widget::grid()
+            .push(widget::text(fl!("partition")))
+            .push(cosmic::iced::widget::vertical_rule(4))
+            .push(widget::text(fl!("total-space")))
+            .push(cosmic::iced::widget::vertical_rule(4))
+            .push(widget::text(fl!("available-space")))
+            .row_spacing(5)
+            .padding(5.into());
 
-        self.core.applet.popup_container(content_list).into()
+        for partition in &self.partitions {
+            let partition_name = &partition.mount_point;
+
+            let total_disk_space = format!("{}GB", partition.get_total_space_in_gb());
+            let available_disk_space = format!("{}GB", partition.get_available_space_in_gb());
+
+            grid = grid
+                .insert_row()
+                .push(cosmic::iced::widget::horizontal_rule(4))
+                .push(cosmic::iced::widget::vertical_rule(4))
+                .push(cosmic::iced::widget::horizontal_rule(4))
+                .push(cosmic::iced::widget::vertical_rule(4))
+                .push(cosmic::iced::widget::horizontal_rule(4))
+                .row_spacing(5)
+                .insert_row()
+                .push(widget::text(partition_name))
+                .push(cosmic::iced::widget::vertical_rule(4))
+                .push(widget::text(total_disk_space))
+                .push(cosmic::iced::widget::vertical_rule(4))
+                .push(widget::text(available_disk_space.to_string()))
+                .row_spacing(5)
+                .column_alignment(cosmic::iced::Alignment::Center)
+        }
+
+        self.core.applet.popup_container(grid).into()
     }
 
-    /// Application messages are handled here. The application state can be modified based on
-    /// what message was received. Commands may be returned for asynchronous execution on a
-    /// background thread managed by the application's executor.
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
         match message {
             Message::TogglePopup => {
@@ -121,19 +123,18 @@ impl Application for YourApp {
                             .applet
                             .get_popup_settings(Id::MAIN, new_id, None, None, None);
                     popup_settings.positioner.size_limits = Limits::NONE
-                        .max_width(372.0)
-                        .min_width(300.0)
-                        .min_height(200.0)
-                        .max_height(1080.0);
+                        .max_width(400.0)
+                        .min_width(100.0)
+                        .min_height(100.0)
+                        .max_height(200.0);
                     get_popup(popup_settings)
-                }
+                };
             }
             Message::PopupClosed(id) => {
                 if self.popup.as_ref() == Some(&id) {
                     self.popup = None;
                 }
             }
-            Message::ToggleExampleRow(toggled) => self.example_row = toggled,
         }
         Command::none()
     }

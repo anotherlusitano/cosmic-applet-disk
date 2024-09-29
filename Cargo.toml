@@ -1,5 +1,5 @@
 [package]
-name = "cosmic-applet-template"
+name = "cosmic-applet-disk"
 version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
@@ -9,6 +9,7 @@ rust-version = "1.80"
 i18n-embed-fl = "0.8"
 open = "5.1.3"
 rust-embed = "8.3.0"
+sysinfo = "0.31.4"
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic.git"

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>another.lusitano.AppletDisk</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  <project_group>COSMIC</project_group>
+  <developer_name>anotherlusitano</developer_name>
+  <update_contact>joao.rosado.ribeiro@gmail.com</update_contact>
+  <url type="homepage"></url>
+  <url type="bugtracker"></url>
+  <name>COSMIC Applet Disk</name>
+  <summary>A Disk applet for COSMIC Desktop</summary>
+  <description>
+    <p>A Disk applet for COSMIC Desktop</p>
+  </description>
+  <launchable type="desktop-id">another.lusitano.AppletDisk.desktop</launchable>
+  <icon type="remote" height="256" width="256">
+    another.lusitano.AppletDisk.svg</icon>
+  <screenshots>
+  </screenshots>
+  <provides>
+    <mimetypes>
+      <mimetype>text/plain</mimetype>
+    </mimetypes>
+    <binaries>
+      <binary>cosmic-applet-disk</binary>
+    </binaries>
+  </provides>
+</component>
