@@ -1,7 +1,9 @@
+use std::time::Duration;
+
 use cosmic::app::{Command, Core};
 use cosmic::iced::wayland::popup::{destroy_popup, get_popup};
 use cosmic::iced::window::Id;
-use cosmic::iced::Limits;
+use cosmic::iced::{time, Limits};
 use cosmic::iced_style::application;
 use cosmic::iced_widget::row;
 use cosmic::widget::{self};
@@ -22,6 +24,7 @@ pub struct App {
 pub enum Message {
     TogglePopup,
     PopupClosed(Id),
+    UpdateDisk,
 }
 
 impl Application for App {
@@ -53,6 +56,10 @@ impl Application for App {
 
     fn on_close_requested(&self, id: Id) -> Option<Message> {
         Some(Message::PopupClosed(id))
+    }
+
+    fn subscription(&self) -> cosmic::iced::Subscription<Self::Message> {
+        time::every(Duration::from_secs(20)).map(|_| Message::UpdateDisk)
     }
 
     fn view(&self) -> Element<Self::Message> {
@@ -134,6 +141,9 @@ impl Application for App {
                 if self.popup.as_ref() == Some(&id) {
                     self.popup = None;
                 }
+            }
+            Message::UpdateDisk => {
+                self.partitions = get_partition();
             }
         }
         Command::none()
