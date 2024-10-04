@@ -20,3 +20,7 @@ After you install it, you can run the following commands to build and install th
 just build-release
 sudo just install
 ```
+
+## Configuring this applet
+
+To change the time this applet will refresh the disk, you need to create the file `refresh_time` and insert the seconds into the file.

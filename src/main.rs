@@ -2,6 +2,7 @@
 
 use app::App;
 mod app;
+mod config;
 mod core;
 mod disk;
 

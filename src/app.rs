@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use cosmic::app::{Command, Core};
+use cosmic::cosmic_config::{self, CosmicConfigEntry};
 use cosmic::iced::wayland::popup::{destroy_popup, get_popup};
 use cosmic::iced::window::Id;
 use cosmic::iced::{time, Limits};
@@ -9,6 +10,7 @@ use cosmic::iced_widget::row;
 use cosmic::widget::{self};
 use cosmic::{Application, Element, Theme};
 
+use crate::config::Config;
 use crate::fl;
 
 use crate::disk::{get_home_partition, get_partition, Partition};
@@ -18,6 +20,7 @@ pub struct App {
     core: Core,
     popup: Option<Id>,
     partitions: Vec<Partition>,
+    config: Config,
 }
 
 #[derive(Debug, Clone)]
@@ -47,6 +50,13 @@ impl Application for App {
     fn init(core: Core, _flags: Self::Flags) -> (Self, Command<Self::Message>) {
         let app = App {
             core,
+            // Optional configuration file for an application.
+            config: cosmic_config::Config::new(Self::APP_ID, Config::VERSION)
+                .map(|context| match Config::get_entry(&context) {
+                    Ok(config) => config,
+                    Err((_errors, config)) => config,
+                })
+                .unwrap_or_default(),
             partitions: get_partition(),
             ..Default::default()
         };
@@ -59,7 +69,9 @@ impl Application for App {
     }
 
     fn subscription(&self) -> cosmic::iced::Subscription<Self::Message> {
-        time::every(Duration::from_secs(20)).map(|_| Message::UpdateDisk)
+        let seconds = self.config.refresh_time;
+
+        time::every(Duration::from_secs(seconds)).map(|_| Message::UpdateDisk)
     }
 
     fn view(&self) -> Element<Self::Message> {
